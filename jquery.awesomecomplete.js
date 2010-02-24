@@ -283,7 +283,7 @@
     
     var defaultValueFunction = function(dataItem)
     {
-        return dataItem[config.nameField];
+        return dataItem[this.nameField];
     };
 
     $.fn.awesomecomplete.defaults = {
