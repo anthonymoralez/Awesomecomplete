@@ -17,6 +17,7 @@
         return this.each(function()
         {
             var $this = $(this);
+            $this.attr('autocomplete', 'off');
             var config = $.meta ? $.extend({}, options, $this.data()) : options;
             $this.data('awesomecomplete-config', config);
 
@@ -24,7 +25,7 @@
             var $list = $('<ul/>').addClass(config.suggestionListClass)
                                   .insertAfter($attachTo)
                                   .hide()
-                                  .css('width', $attachTo.innerWidth());
+                                  .css({'width': $attachTo.innerWidth(), 'margin-top': $attachTo.outerHeight()});
             $this.data('awesomecomplete-list', $list);
 
             var typingDelayPointer;
@@ -64,7 +65,7 @@
                         {
                             event.preventDefault();
                             $this.val($active.data('awesomecomplete-value'));
-							config.onComplete($active.data('awesomecomplete-dataItem'));
+                            config.onComplete($active.data('awesomecomplete-dataItem'));
                             $list.hide();
                         }
                         $list.hide();
@@ -128,6 +129,7 @@
                     var $active = $list.children('li.' + config.activeItemClass);
                     if ($list.is(':visible') && ($active.length !== 0))
                         $this.val($active.data('awesomecomplete-value'));
+                    config.onComplete($active.data('awesomecomplete-dataItem'));
                     $list.hide();
                 }
             });
@@ -142,7 +144,7 @@
     // Data callback.  If you're using callbacks to a server,
     // call this on the autocompleted text field to complete the
     // callback process after you have your matching items.
-    $.fn.awesomecomplete.onData = function(data, term)
+    $.fn.onData = function(data, term)
     {
         return this.each(function()
         {
@@ -155,8 +157,8 @@
 // private helpers
     var processInput = function($this)
     {
-        if (typeof dataMethod === 'function')
-            dataMethod($this.val(), $this);
+        if (typeof $this.data('awesomecomplete-config').dataMethod === 'function')
+            $this.data('awesomecomplete-config').dataMethod($this.val(), $this);
         else
             processData($this, $this.data('awesomecomplete-config').staticData, $this.val());
     };
@@ -248,19 +250,18 @@
 
         for (var i in results)
         {
-            $('<li>' + config.renderFunction(results[i].dataItem, results[i].topMatch, results[i].originalDataItem) + '</li>')
-				.data('awesomecomplete-dataItem', results[i].originalDataItem)
-                .data('awesomecomplete-value', config.valueFunction(results[i].originalDataItem))
-                .appendTo($list)
-                .click(function()
-                {
-                    $this.val($(this).data('awesomecomplete-value'));
-                })
-                .mouseover(function()
-                {
-                    $(this).addClass(config.activeItemClass)
-                           .siblings().removeClass(config.activeItemClass);
-                });
+            if ((typeof results[i] === 'function')) 
+                 continue;
+            var item = $('<li>' + config.renderFunction(results[i].dataItem, results[i].topMatch, results[i].originalDataItem) + '</li>');
+            item.data('awesomecomplete-dataItem', results[i].originalDataItem);
+            item.data('awesomecomplete-value', config.valueFunction(results[i].originalDataItem));
+            item.appendTo($list);
+            item.click(function() {
+                $this.val($(this).data('awesomecomplete-value'));
+            });
+            item.mouseover(function() {
+              $(this).addClass(config.activeItemClass).siblings().removeClass(config.activeItemClass);
+            });
         }
 
         if ((config.noResultsMessage !== undefined) && (results.length == 0))
@@ -273,12 +274,12 @@
 // default functions
     var defaultRenderFunction = function(dataItem, topMatch)
     {
-        if (topMatch === 'name')
-            return '<p class="title">' + dataItem['name'] + '</p>';
+        if (topMatch === this.nameField)
+            return '<p class="title">' + dataItem[this.nameField] + '</p>';
         else
-            return '<p class="title">' + dataItem['name'] + '</p>' +
-                   '<p class="matchRow"><span class="matchedField">' + topMatch + '</span>: ' +
-                        dataItem[topMatch] + '</p>';
+            return '<p class="title">' + dataItem[this.nameField] + '</p>' +
+                   '<p class="matchRow"><span class="matchedField">' + this.topMatch + '</span>: ' +
+                        dataItem[this.topMatch] + '</p>';
     };
     
     var defaultValueFunction = function(dataItem)
@@ -297,7 +298,7 @@
         nameField: 'name',
         noResultsClass: 'noResults',
         noResultsMessage: undefined,
-		onComplete: function(dataItem) {},
+        onComplete: function(dataItem) {},
         splitTerm: true,
         staticData: [],
         suggestionListClass: "autocomplete",
