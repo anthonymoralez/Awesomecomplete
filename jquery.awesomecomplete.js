@@ -20,6 +20,9 @@
             $this.attr('autocomplete', 'off');
             var config = $.meta ? $.extend({}, options, $this.data()) : options;
             $this.data('awesomecomplete-config', config);
+            if (config.staticData.length <= 0 && config.dataMethod === undefined) {
+              return; 
+            }
 
             var $attachTo = $(config.attachTo || $this);
             var $list = $('<ul/>').addClass(config.suggestionListClass)
@@ -157,10 +160,12 @@
 // private helpers
     var processInput = function($this)
     {
-        if (typeof $this.data('awesomecomplete-config').dataMethod === 'function')
-            $this.data('awesomecomplete-config').dataMethod($this.val(), $this);
-        else
+        dataMethod = $this.data('awesomecomplete-config').dataMethod;
+        if (typeof dataMethod === 'function') {
+            dataMethod($this.val(), $this);
+  		  } else {
             processData($this, $this.data('awesomecomplete-config').staticData, $this.val());
+        }
     };
     
     var processData = function($this, data, term)
@@ -269,6 +274,7 @@
 
         if ((results.length > 0) || (config.noResultsMessage !== undefined))
             $list.show();
+
     };
 
 // default functions
